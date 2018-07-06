@@ -102,7 +102,16 @@ void setup() {
 void updateLeds() {
   static unsigned char cnt = 0;
   char st = HIGH;
-  digitalWrite(LEDS[state], st);
+  if(tune) {
+    static unsigned int c = 0;
+    if(++c > 1000) {
+      // flash active led
+      digitalWrite(LEDS[state], !digitalRead(LEDS[state]));
+      c = 0;
+    }
+  } else {
+    digitalWrite(LEDS[state], st);
+  }
   st = LOW;
   if(cnt < eeprom.IDLE_LED)
     st = HIGH;
