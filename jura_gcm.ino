@@ -6,16 +6,20 @@
 #define LED_N 6
 #define LED_D 9
 
-#define BUTTON_UP 2
-#define BUTTON_DOWN 7
-#define BUTTON_BTN 10
-#define BUTTON_PRESSED 0
+#define BUTTON_UP       2
+#define BUTTON_DOWN     7
+#define BUTTON_BTN     10
+#define BUTTON_BRAKE   11
+#define BUTTON_PARK    12
+#define BUTTON_PRESSED  0
 
 #define SERVO_PIN 19
 
-#define UP() (digitalRead(BUTTON_UP) == BUTTON_PRESSED)
-#define DOWN() (digitalRead(BUTTON_DOWN) == BUTTON_PRESSED)
-#define BTN() (digitalRead(BUTTON_BTN) == BUTTON_PRESSED)
+#define UP()    (digitalRead(BUTTON_UP)    == BUTTON_PRESSED)
+#define DOWN()  (digitalRead(BUTTON_DOWN)  == BUTTON_PRESSED)
+#define BTN()   (digitalRead(BUTTON_BTN)   == BUTTON_PRESSED)
+#define PARK()  (digitalRead(BUTTON_PARK)  == BUTTON_PRESSED)
+#define BRAKE() (digitalRead(BUTTON_BRAKE) == BUTTON_PRESSED)
 
 #define IDLE_PWM 20
 
@@ -85,6 +89,8 @@ void setup() {
   pinMode(BUTTON_UP, INPUT_PULLUP);
   pinMode(BUTTON_DOWN, INPUT_PULLUP);
   pinMode(BUTTON_BTN, INPUT_PULLUP);
+  pinMode(BUTTON_BRAKE, INPUT_PULLUP);
+  pinMode(BUTTON_PARK, INPUT_PULLUP);
 
   for(auto i = 0; i< _LAST; i++) {
     pinMode(LEDS[i], OUTPUT);
@@ -135,7 +141,7 @@ void checkButtons() {
       pressed = 0;
       return;
     }
-    if(!UP() && !DOWN() && !BTN())
+    if(!UP() && !DOWN() && !BTN() && !PARK())
       pressed = 0;
     return;
   }
@@ -169,14 +175,63 @@ void checkButtons() {
     return;
   }
 
-  if(UP() && (state+1) < _LAST) {
-    ++state;
-    pressed = 1;
+  if(BTN() && BRAKE()) {
+    if(PARK()) {            // if park pressed - go to parking from any mode
+      state = _P;
+      pressed = 1;
+      return;
+    }
+    switch(state) {
+      case _P:
+        if(UP()) {          // P -> R
+          state = _R;
+          pressed = 1;
+        } else if(DOWN()) { // P -> D
+          state = _D;
+          pressed = 1;
+        }
+      break;
+
+      case _R:
+        if(UP()) {          // R -> D
+          state = _D;
+          pressed = 1;
+        } else if(DOWN()) { // R -> D
+          state = _D;
+          pressed = 1;
+        }
+      break;
+
+      case _N:
+        if(UP()) {          // N -> D
+          state = _D;
+          pressed = 1;
+        } else if(DOWN()) { // N -> D
+          state = _D;
+          pressed = 1;
+        }
+      break;
+
+      case _D:
+        if(UP()) {          // D -> N
+          state = _N;
+          pressed = 1;
+        } else if(DOWN()) { // D -> N
+          state = _N;
+          pressed = 1;
+        }
+      break;
+    }
   }
-  if(DOWN() && (state-1) >= 0) {
-    --state;
-    pressed = 1;
-  }
+
+//  if(UP() && (state+1) < _LAST) {
+//    ++state;
+//    pressed = 1;
+//  }
+//  if(DOWN() && (state-1) >= 0) {
+//    --state;
+//    pressed = 1;
+//  }
 }
 
 void updateServo() {
