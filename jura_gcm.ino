@@ -101,7 +101,7 @@ void setup() {
 
 void updateLeds() {
   static unsigned char cnt = 0;
-  char st = HIGH;
+  char st = LOW;
   if(tune) {
     static unsigned int c = 0;
     if(++c > 1000) {
@@ -112,11 +112,11 @@ void updateLeds() {
   } else {
     digitalWrite(LEDS[state], st);
   }
-  st = LOW;
+  st = HIGH;
   if(cnt < eeprom.IDLE_LED)
-    st = HIGH;
-  if(tune && state != _LAST)
     st = LOW;
+  if(tune && state != _LAST)
+    st = HIGH;
   for(auto i = 0; i< _LAST; i++)
     if(i != state)
       digitalWrite(LEDS[i], st);
