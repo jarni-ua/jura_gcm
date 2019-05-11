@@ -103,6 +103,8 @@ void setup() {
     tune = 1;
     pressed = 1;
   }
+  
+  Serial.begin(115200);
 }
 
 void updateLeds() {
@@ -137,20 +139,15 @@ void checkButtons() {
   cnt = 0;
 
   if(pressed) {
-    if(tune && !BTN()) {
-      pressed = 0;
-      return;
-    }
-    if(!UP() && !DOWN() && !BTN() && !PARK())
+    if(!UP() && !DOWN())
       pressed = 0;
     return;
   }
 
-  if(BTN()) {
-    pressed = 1;
-    if(tune) {
+  if(tune) {
+    if(BTN()) {
+      while(BTN());
       if(state == _LAST) {
-        while(BTN());
         eeprom.write();
         tune = 0;
         state = _P;
@@ -159,26 +156,36 @@ void checkButtons() {
       ++state;
       return;
     }
-  }
 
-  if(tune) {
     unsigned char *v;
     if(state != _LAST) {
       v = &SERVO_POS[state];
     } else {
       v = &eeprom.IDLE_LED;
     }
-    if(UP())
+    if(UP()) {
+      while(UP());
       (*v)++;
-    if(DOWN())
+      return;
+    }
+    if(DOWN()){
+      while(DOWN());
       (*v)--;
+      return;
+    }
     return;
   }
+  
+  Serial.print(BTN());
+  Serial.print(BRAKE());
+  Serial.print(PARK());
+  Serial.print(UP());
+  Serial.print(DOWN());
+  Serial.println();
 
   if(BTN() && BRAKE()) {
     if(PARK()) {            // if park pressed - go to parking from any mode
       state = _P;
-      pressed = 1;
       return;
     }
     switch(state) {
@@ -249,4 +256,3 @@ void loop() {
   updateLeds();
   updateServo();
 }
-
