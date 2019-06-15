@@ -207,6 +207,7 @@ void checkButtons() {
     return;
   }
   
+  
   if(BTN() && BRAKE()) {
     if(PARK()) {            // if park pressed - go to parking from any mode
       state = _P;
