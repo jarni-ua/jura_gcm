@@ -5,21 +5,26 @@
 #define LED_R 5
 #define LED_N 6
 #define LED_D 9
+#define OUT_UP         14
+#define OUT_DOWN       15
 
 #define BUTTON_UP       2
 #define BUTTON_DOWN     7
 #define BUTTON_BTN     10
 #define BUTTON_BRAKE   11
 #define BUTTON_PARK    12
+#define BUTTON_MANUAL  13
+
 #define BUTTON_PRESSED  0
 
 #define SERVO_PIN 19
 
-#define UP()    (digitalRead(BUTTON_UP)    == BUTTON_PRESSED)
-#define DOWN()  (digitalRead(BUTTON_DOWN)  == BUTTON_PRESSED)
-#define BTN()   (digitalRead(BUTTON_BTN)   == BUTTON_PRESSED)
-#define PARK()  (digitalRead(BUTTON_PARK)  == BUTTON_PRESSED)
-#define BRAKE() (digitalRead(BUTTON_BRAKE) == BUTTON_PRESSED)
+#define UP()     (digitalRead(BUTTON_UP)    == BUTTON_PRESSED)
+#define DOWN()   (digitalRead(BUTTON_DOWN)  == BUTTON_PRESSED)
+#define BTN()    (digitalRead(BUTTON_BTN)   == BUTTON_PRESSED)
+#define PARK()   (digitalRead(BUTTON_PARK)  == BUTTON_PRESSED)
+#define BRAKE()  (digitalRead(BUTTON_BRAKE) == BUTTON_PRESSED)
+#define MANUAL() (digitalRead(BUTTON_BRAKE) == BUTTON_PRESSED)
 
 #define IDLE_PWM 20
 
@@ -91,6 +96,9 @@ void setup() {
   pinMode(BUTTON_BTN, INPUT_PULLUP);
   pinMode(BUTTON_BRAKE, INPUT_PULLUP);
   pinMode(BUTTON_PARK, INPUT_PULLUP);
+  pinMode(BUTTON_MANUAL, INPUT_PULLUP);
+  pinMode(OUT_UP, OUTPUT);
+  pinMode(OUT_DOWN, OUTPUT);
 
   for(auto i = 0; i< _LAST; i++) {
     pinMode(LEDS[i], OUTPUT);
@@ -103,6 +111,8 @@ void setup() {
     tune = 1;
     pressed = 1;
   }
+  
+  Serial.begin(115200);
 }
 
 void updateLeds() {
@@ -137,20 +147,38 @@ void checkButtons() {
   cnt = 0;
 
   if(pressed) {
-    if(tune && !BTN()) {
+    if(!UP() && !DOWN()) {
       pressed = 0;
-      return;
+      if(MANUAL()) {
+        digitalWrite(OUT_UP, HIGH);
+        digitalWrite(OUT_DOWN, HIGH);
+      } else {
+        digitalWrite(OUT_UP, LOW);
+        digitalWrite(OUT_DOWN, LOW);
+      }
     }
-    if(!UP() && !DOWN() && !BTN() && !PARK())
-      pressed = 0;
     return;
   }
 
-  if(BTN()) {
-    pressed = 1;
-    if(tune) {
+  if(MANUAL()) {
+    int u = HIGH, d = HIGH;
+    if(UP()) {
+      u = LOW;
+      pressed = 1;
+    } else if (DOWN()) {
+      d = LOW;
+      pressed = 1;
+    }
+    digitalWrite(OUT_UP, u);
+    digitalWrite(OUT_DOWN, d);
+
+    return;
+  }
+
+  if(tune) {
+    if(BTN()) {
+      while(BTN());
       if(state == _LAST) {
-        while(BTN());
         eeprom.write();
         tune = 0;
         state = _P;
@@ -159,26 +187,29 @@ void checkButtons() {
       ++state;
       return;
     }
-  }
 
-  if(tune) {
     unsigned char *v;
     if(state != _LAST) {
       v = &SERVO_POS[state];
     } else {
       v = &eeprom.IDLE_LED;
     }
-    if(UP())
+    if(UP()) {
+      while(UP());
       (*v)++;
-    if(DOWN())
+      return;
+    }
+    if(DOWN()){
+      while(DOWN());
       (*v)--;
+      return;
+    }
     return;
   }
-
+  
   if(BTN() && BRAKE()) {
     if(PARK()) {            // if park pressed - go to parking from any mode
       state = _P;
-      pressed = 1;
       return;
     }
     switch(state) {
@@ -249,4 +280,3 @@ void loop() {
   updateLeds();
   updateServo();
 }
-
