@@ -24,7 +24,7 @@
 #define BTN()    (digitalRead(BUTTON_BTN)   == BUTTON_PRESSED)
 #define PARK()   (digitalRead(BUTTON_PARK)  == BUTTON_PRESSED)
 #define BRAKE()  (digitalRead(BUTTON_BRAKE) == BUTTON_PRESSED)
-#define MANUAL() (digitalRead(BUTTON_BRAKE) == BUTTON_PRESSED)
+#define MANUAL() (digitalRead(BUTTON_BRAKE) == HIGH)
 
 #define IDLE_PWM 20
 
