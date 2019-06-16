@@ -5,6 +5,7 @@
 #define LED_R 5
 #define LED_N 6
 #define LED_D 9
+#define LED_M 8
 #define OUT_UP         14
 #define OUT_DOWN       15
 
@@ -13,18 +14,18 @@
 #define BUTTON_BTN     10
 #define BUTTON_BRAKE   11
 #define BUTTON_PARK    12
-#define BUTTON_MANUAL  13
+#define BUTTON_MANUAL  16
 
 #define BUTTON_PRESSED  0
 
 #define SERVO_PIN 19
 
-#define UP()     (digitalRead(BUTTON_UP)    == BUTTON_PRESSED)
-#define DOWN()   (digitalRead(BUTTON_DOWN)  == BUTTON_PRESSED)
-#define BTN()    (digitalRead(BUTTON_BTN)   == BUTTON_PRESSED)
-#define PARK()   (digitalRead(BUTTON_PARK)  == BUTTON_PRESSED)
-#define BRAKE()  (digitalRead(BUTTON_BRAKE) == BUTTON_PRESSED)
-#define MANUAL() (digitalRead(BUTTON_BRAKE) == HIGH)
+#define UP()     (digitalRead(BUTTON_UP)     == BUTTON_PRESSED)
+#define DOWN()   (digitalRead(BUTTON_DOWN)   == BUTTON_PRESSED)
+#define BTN()    (digitalRead(BUTTON_BTN)    == BUTTON_PRESSED)
+#define PARK()   (digitalRead(BUTTON_PARK)   == BUTTON_PRESSED)
+#define BRAKE()  (digitalRead(BUTTON_BRAKE)  == BUTTON_PRESSED)
+#define MANUAL() (digitalRead(BUTTON_MANUAL) == HIGH)
 
 #define IDLE_PWM 20
 
@@ -79,6 +80,7 @@ unsigned char *SERVO_POS = (unsigned char *)&eeprom.SERVO_POS;
 unsigned char state = _P;
 unsigned char pressed = 0;
 unsigned char tune = 0;
+bool          manual = false;
 
 Servo servo;
 
@@ -99,6 +101,8 @@ void setup() {
   pinMode(BUTTON_MANUAL, INPUT_PULLUP);
   pinMode(OUT_UP, OUTPUT);
   pinMode(OUT_DOWN, OUTPUT);
+  digitalWrite(OUT_UP, LOW);
+  digitalWrite(OUT_DOWN, LOW);
 
   for(auto i = 0; i< _LAST; i++) {
     pinMode(LEDS[i], OUTPUT);
@@ -137,6 +141,10 @@ void updateLeds() {
     if(i != state)
       digitalWrite(LEDS[i], st);
 
+  if(manual)
+    digitalWrite(LED_M, LOW);
+  else 
+    digitalWrite(LED_M, st);
   ++cnt;
 }
 
@@ -149,18 +157,11 @@ void checkButtons() {
   if(pressed) {
     if(!UP() && !DOWN()) {
       pressed = 0;
-      if(MANUAL()) {
-        digitalWrite(OUT_UP, HIGH);
-        digitalWrite(OUT_DOWN, HIGH);
-      } else {
-        digitalWrite(OUT_UP, LOW);
-        digitalWrite(OUT_DOWN, LOW);
-      }
     }
     return;
   }
 
-  if(MANUAL()) {
+  if(manual) {
     int u = HIGH, d = HIGH;
     if(UP()) {
       u = LOW;
@@ -251,7 +252,21 @@ void checkButtons() {
         } else if(DOWN()) { // D -> N
           state = _N;
           pressed = 1;
+        } else {
+          if (!manual && MANUAL()) { // switch to manual
+	    manual = true;
+	    digitalWrite(OUT_UP, HIGH);
+	    digitalWrite(OUT_DOWN, HIGH);
+          } else if (manual && !MANUAL()) { // switch to normal
+	    manual = false;
+	    digitalWrite(OUT_UP, LOW);
+	    digitalWrite(OUT_DOWN, LOW);
+	  }
         }
+        manual = MANUAL();
+        if(manual) {
+        }
+        if(MANUAL() && !manual)
       break;
     }
   }
