@@ -16,15 +16,13 @@
 #define BUTTON_PARK    12
 #define BUTTON_MANUAL  16
 
-#define BUTTON_PRESSED  0
-
 #define SERVO_PIN 19
 
-#define UP()     (digitalRead(BUTTON_UP)     == BUTTON_PRESSED)
-#define DOWN()   (digitalRead(BUTTON_DOWN)   == BUTTON_PRESSED)
-#define BTN()    (digitalRead(BUTTON_BTN)    == BUTTON_PRESSED)
-#define PARK()   (digitalRead(BUTTON_PARK)   == BUTTON_PRESSED)
-#define BRAKE()  (digitalRead(BUTTON_BRAKE)  == BUTTON_PRESSED)
+#define UP()     (digitalRead(BUTTON_UP)     == LOW)
+#define DOWN()   (digitalRead(BUTTON_DOWN)   == LOW)
+#define BTN()    (digitalRead(BUTTON_BTN)    == LOW)
+#define PARK()   (digitalRead(BUTTON_PARK)   == LOW)
+#define BRAKE()  (digitalRead(BUTTON_BRAKE)  == LOW)
 #define MANUAL() (digitalRead(BUTTON_MANUAL) == HIGH)
 
 #define IDLE_PWM 20
