@@ -261,10 +261,6 @@ void checkButtons() {
 	    digitalWrite(OUT_DOWN, LOW);
 	  }
         }
-        manual = MANUAL();
-        if(manual) {
-        }
-        if(MANUAL() && !manual)
       break;
     }
   }
