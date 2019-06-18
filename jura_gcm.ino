@@ -113,7 +113,7 @@ void setup() {
     tune = 1;
     pressed = 1;
   }
-  
+
   Serial.begin(115200);
 }
 
@@ -139,10 +139,11 @@ void updateLeds() {
     if(i != state)
       digitalWrite(LEDS[i], st);
 
-  if(manual)
+  if(manual) {
     digitalWrite(LED_M, LOW);
-  else 
+  } else {
     digitalWrite(LED_M, st);
+  }
   ++cnt;
 }
 
@@ -205,8 +206,7 @@ void checkButtons() {
     }
     return;
   }
-  
-  
+
   if(BTN() && BRAKE()) {
     if(PARK()) {            // if park pressed - go to parking from any mode
       state = _P;
@@ -252,27 +252,18 @@ void checkButtons() {
           pressed = 1;
         } else {
           if (!manual && MANUAL()) { // switch to manual
-	    manual = true;
-	    digitalWrite(OUT_UP, HIGH);
-	    digitalWrite(OUT_DOWN, HIGH);
+            manual = true;
+            digitalWrite(OUT_UP, HIGH);
+            digitalWrite(OUT_DOWN, HIGH);
           } else if (manual && !MANUAL()) { // switch to normal
-	    manual = false;
-	    digitalWrite(OUT_UP, LOW);
-	    digitalWrite(OUT_DOWN, LOW);
-	  }
+            manual = false;
+            digitalWrite(OUT_UP, LOW);
+            digitalWrite(OUT_DOWN, LOW);
+          }
         }
       break;
     }
   }
-
-//  if(UP() && (state+1) < _LAST) {
-//    ++state;
-//    pressed = 1;
-//  }
-//  if(DOWN() && (state-1) >= 0) {
-//    --state;
-//    pressed = 1;
-//  }
 }
 
 void updateServo() {
@@ -283,10 +274,9 @@ void updateServo() {
   }
 }
 
-unsigned char i = 0;
-
 void loop() {
   checkButtons();
   updateLeds();
   updateServo();
 }
+
