@@ -212,7 +212,9 @@ void checkButtons() {
       digitalWrite(OUT_UP, HIGH);
       digitalWrite(OUT_DOWN, HIGH);
       return;
-    } else if (manual && !MANUAL()) { // switch to normal
+    }
+
+    if (manual && !MANUAL()) { // switch to normal
       manual = false;
       digitalWrite(OUT_UP, LOW);
       digitalWrite(OUT_DOWN, LOW);
