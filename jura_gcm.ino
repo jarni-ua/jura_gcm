@@ -140,7 +140,7 @@ void updateLeds() {
     if(i != state)
       digitalWrite(LEDS[i], st);
 
-  if(MANUAL()) {
+  if(manual) {
     digitalWrite(LED_M, LOW);
   } else {
     digitalWrite(LED_M, st);
