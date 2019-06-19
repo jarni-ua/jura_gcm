@@ -78,7 +78,7 @@ unsigned char *SERVO_POS = (unsigned char *)&eeprom.SERVO_POS;
 unsigned char state = _P;
 unsigned char pressed = 0;
 unsigned char tune = 0;
-bool          manual = false;
+unsigned char manual = false;
 
 Servo servo;
 
