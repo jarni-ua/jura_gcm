@@ -12,8 +12,8 @@
 #define BUTTON_UP       2
 #define BUTTON_DOWN     7
 #define BUTTON_BTN     10
-#define BUTTON_BRAKE   11
-#define BUTTON_PARK    12
+#define BUTTON_BRAKE   12
+#define BUTTON_PARK    11
 #define BUTTON_MANUAL  16
 
 #define SERVO_PIN 19
@@ -105,6 +105,7 @@ void setup() {
   for(auto i = 0; i< _LAST; i++) {
     pinMode(LEDS[i], OUTPUT);
   }
+  pinMode(LED_M, OUTPUT);
 
   servo.attach(SERVO_PIN);
   servo.write(SERVO_POS[state]);
@@ -195,12 +196,10 @@ void checkButtons() {
       v = &eeprom.IDLE_LED;
     }
     if(UP()) {
-      while(UP());
       (*v)++;
       return;
     }
     if(DOWN()){
-      while(DOWN());
       (*v)--;
       return;
     }
@@ -214,21 +213,21 @@ void checkButtons() {
     }
     switch(state) {
       case _P:
-        if(UP()) {          // P -> R
-          state = _R;
-          pressed = 1;
-        } else if(DOWN()) { // P -> D
+        if(UP()) {          // P -> D
           state = _D;
+          pressed = 1;
+        } else if(DOWN()) { // P -> R
+          state = _R;
           pressed = 1;
         }
       break;
 
       case _R:
-        if(UP()) {          // R -> D
-          state = _D;
+        if(UP()) {          // R -> N
+          state = _N;
           pressed = 1;
-        } else if(DOWN()) { // R -> D
-          state = _D;
+        } else if(DOWN()) { // R -> P
+          state = _P;
           pressed = 1;
         }
       break;
@@ -237,15 +236,15 @@ void checkButtons() {
         if(UP()) {          // N -> D
           state = _D;
           pressed = 1;
-        } else if(DOWN()) { // N -> D
-          state = _D;
+        } else if(DOWN()) { // N -> R
+          state = _R;
           pressed = 1;
         }
       break;
 
       case _D:
-        if(UP()) {          // D -> N
-          state = _N;
+        if(UP()) {          // D -> D
+          state = _D;
           pressed = 1;
         } else if(DOWN()) { // D -> N
           state = _N;
