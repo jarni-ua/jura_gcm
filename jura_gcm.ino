@@ -206,6 +206,20 @@ void checkButtons() {
     return;
   }
 
+  if(state == _D) {
+    if (!manual && MANUAL()) { // switch to manual
+      manual = true;
+      digitalWrite(OUT_UP, HIGH);
+      digitalWrite(OUT_DOWN, HIGH);
+      return;
+    } else if (manual && !MANUAL()) { // switch to normal
+      manual = false;
+      digitalWrite(OUT_UP, LOW);
+      digitalWrite(OUT_DOWN, LOW);
+      return;
+    }
+  }
+
   if(BTN() && BRAKE()) {
     if(PARK()) {            // if park pressed - go to parking from any mode
       state = _P;
@@ -249,16 +263,6 @@ void checkButtons() {
         } else if(DOWN()) { // D -> N
           state = _N;
           pressed = 1;
-        } else {
-          if (!manual && MANUAL()) { // switch to manual
-            manual = true;
-            digitalWrite(OUT_UP, HIGH);
-            digitalWrite(OUT_DOWN, HIGH);
-          } else if (manual && !MANUAL()) { // switch to normal
-            manual = false;
-            digitalWrite(OUT_UP, LOW);
-            digitalWrite(OUT_DOWN, LOW);
-          }
         }
       break;
     }
