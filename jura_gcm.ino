@@ -28,48 +28,48 @@
 #define IDLE_PWM 20
 
 enum State {
-  _P = 0,
-  _R,
-  _N,
-  _D,
-  _LAST
+    _P = 0,
+    _R,
+    _N,
+    _D,
+    _LAST
 };
 
 struct EEP {
-  unsigned char SERVO_POS[_LAST];
-  unsigned char IDLE_LED;
-  unsigned char CRC;
+    unsigned char SERVO_POS[_LAST];
+    unsigned char IDLE_LED;
+    unsigned char CRC;
 
-  void init() {
-    for(auto i = 0; i< _LAST; i++) {
-      SERVO_POS[i] = 58+i*5;
+    void init() {
+        for(auto i = 0; i< _LAST; i++) {
+            SERVO_POS[i] = 58+i*5;
+        }
+        IDLE_LED = 5;
+        CRC = 0;
+        for(unsigned char *p = (unsigned char *)this; p < &CRC; ++p)
+            CRC += *p;
     }
-    IDLE_LED = 5;
-    CRC = 0;
-    for(unsigned char *p = (unsigned char *)this; p < &CRC; ++p)
-      CRC += *p;
-  }
 
-  EEP() {
-    init();
-  }
+    EEP() {
+        init();
+    }
 
-  void read() {
-    EEPROM.get(0, *this);
+    void read() {
+        EEPROM.get(0, *this);
 
-    unsigned char tmp = 0;
-    for(unsigned char *p = (unsigned char *)this; p < &CRC; ++p)
-      tmp += *p;
-    if(tmp != CRC)
-      init();
-  }
+        unsigned char tmp = 0;
+        for(unsigned char *p = (unsigned char *)this; p < &CRC; ++p)
+            tmp += *p;
+        if(tmp != CRC)
+            init();
+    }
 
-  void write() {
-    CRC = 0;
-    for(unsigned char *p = (unsigned char *)this; p < &CRC; ++p)
-      CRC += *p;
-    EEPROM.put(0, *this);
-  }
+    void write() {
+        CRC = 0;
+        for(unsigned char *p = (unsigned char *)this; p < &CRC; ++p)
+            CRC += *p;
+        EEPROM.put(0, *this);
+    }
 } eeprom;
 
 unsigned char LEDS[_LAST];
@@ -83,205 +83,205 @@ unsigned char manual = false;
 Servo servo;
 
 void setup() {
-  // load values from EERPOM
-  eeprom.read();
+    // load values from EERPOM
+    eeprom.read();
 
-  LEDS[_P] = LED_P;
-  LEDS[_R] = LED_R;
-  LEDS[_N] = LED_N;
-  LEDS[_D] = LED_D;
+    LEDS[_P] = LED_P;
+    LEDS[_R] = LED_R;
+    LEDS[_N] = LED_N;
+    LEDS[_D] = LED_D;
 
-  pinMode(BUTTON_UP, INPUT_PULLUP);
-  pinMode(BUTTON_DOWN, INPUT_PULLUP);
-  pinMode(BUTTON_BTN, INPUT_PULLUP);
-  pinMode(BUTTON_BRAKE, INPUT_PULLUP);
-  pinMode(BUTTON_PARK, INPUT_PULLUP);
-  pinMode(BUTTON_MANUAL, INPUT_PULLUP);
-  pinMode(OUT_UP, OUTPUT);
-  pinMode(OUT_DOWN, OUTPUT);
-  digitalWrite(OUT_UP, LOW);
-  digitalWrite(OUT_DOWN, LOW);
+    pinMode(BUTTON_UP, INPUT_PULLUP);
+    pinMode(BUTTON_DOWN, INPUT_PULLUP);
+    pinMode(BUTTON_BTN, INPUT_PULLUP);
+    pinMode(BUTTON_BRAKE, INPUT_PULLUP);
+    pinMode(BUTTON_PARK, INPUT_PULLUP);
+    pinMode(BUTTON_MANUAL, INPUT_PULLUP);
+    pinMode(OUT_UP, OUTPUT);
+    pinMode(OUT_DOWN, OUTPUT);
+    digitalWrite(OUT_UP, LOW);
+    digitalWrite(OUT_DOWN, LOW);
 
-  for(auto i = 0; i< _LAST; i++) {
-    pinMode(LEDS[i], OUTPUT);
-  }
-  pinMode(LED_M, OUTPUT);
+    for(auto i = 0; i< _LAST; i++) {
+        pinMode(LEDS[i], OUTPUT);
+    }
+    pinMode(LED_M, OUTPUT);
 
-  servo.attach(SERVO_PIN);
-  servo.write(SERVO_POS[state]);
+    servo.attach(SERVO_PIN);
+    servo.write(SERVO_POS[state]);
 
-  if(BTN()) {
-    tune = 1;
-    pressed = 1;
-  }
+    if(BTN()) {
+        tune = 1;
+        pressed = 1;
+    }
 
-  Serial.begin(115200);
+    Serial.begin(115200);
 }
 
 void updateLeds() {
-  static unsigned char cnt = 0;
-  char st = LOW;
-  if(tune) {
-    static unsigned int c = 0;
-    if(++c > 1000) {
-      // flash active led
-      digitalWrite(LEDS[state], !digitalRead(LEDS[state]));
-      c = 0;
+    static unsigned char cnt = 0;
+    char st = LOW;
+    if(tune) {
+        static unsigned int c = 0;
+        if(++c > 1000) {
+            // flash active led
+            digitalWrite(LEDS[state], !digitalRead(LEDS[state]));
+            c = 0;
+        }
+    } else {
+        digitalWrite(LEDS[state], st);
     }
-  } else {
-    digitalWrite(LEDS[state], st);
-  }
-  st = HIGH;
-  if(cnt < eeprom.IDLE_LED)
-    st = LOW;
-  if(tune && state != _LAST)
     st = HIGH;
-  for(auto i = 0; i< _LAST; i++)
-    if(i != state)
-      digitalWrite(LEDS[i], st);
+    if(cnt < eeprom.IDLE_LED)
+        st = LOW;
+    if(tune && state != _LAST)
+        st = HIGH;
+    for(auto i = 0; i< _LAST; i++)
+        if(i != state)
+            digitalWrite(LEDS[i], st);
 
-  if(manual) {
-    digitalWrite(LED_M, LOW);
-  } else {
-    digitalWrite(LED_M, st);
-  }
-  ++cnt;
+    if(manual) {
+        digitalWrite(LED_M, LOW);
+    } else {
+        digitalWrite(LED_M, st);
+    }
+    ++cnt;
 }
 
 void checkButtons() {
-  static unsigned int cnt = 0;
-  if(++cnt < 2000)
-    return;
-  cnt = 0;
-
-  if(pressed) {
-    if(!UP() && !DOWN()) {
-      pressed = 0;
-    }
-    return;
-  }
-
-  if(manual) {
-    int u = HIGH, d = HIGH;
-    if(UP()) {
-      u = LOW;
-      pressed = 1;
-    } else if (DOWN()) {
-      d = LOW;
-      pressed = 1;
-    }
-    digitalWrite(OUT_UP, u);
-    digitalWrite(OUT_DOWN, d);
-
-    return;
-  }
-
-  if(tune) {
-    if(BTN()) {
-      while(BTN());
-      if(state == _LAST) {
-        eeprom.write();
-        tune = 0;
-        state = _P;
+    static unsigned int cnt = 0;
+    if(++cnt < 2000)
         return;
-      }
-      ++state;
-      return;
-    }
+    cnt = 0;
 
-    unsigned char *v;
-    if(state != _LAST) {
-      v = &SERVO_POS[state];
-    } else {
-      v = &eeprom.IDLE_LED;
-    }
-    if(UP()) {
-      (*v)++;
-      return;
-    }
-    if(DOWN()){
-      (*v)--;
-      return;
-    }
-    return;
-  }
-
-  if(state == _D) {
-    if (!manual && MANUAL()) { // switch to manual
-      manual = true;
-      digitalWrite(OUT_UP, HIGH);
-      digitalWrite(OUT_DOWN, HIGH);
-      return;
-    }
-
-    if (manual && !MANUAL()) { // switch to normal
-      manual = false;
-      digitalWrite(OUT_UP, LOW);
-      digitalWrite(OUT_DOWN, LOW);
-      return;
-    }
-  }
-
-  if(BTN() && BRAKE()) {
-    if(PARK()) {            // if park pressed - go to parking from any mode
-      state = _P;
-      return;
-    }
-    switch(state) {
-      case _P:
-        if(UP()) {          // P -> D
-          state = _D;
-          pressed = 1;
-        } else if(DOWN()) { // P -> R
-          state = _R;
-          pressed = 1;
+    if(pressed) {
+        if(!UP() && !DOWN()) {
+            pressed = 0;
         }
-      break;
-
-      case _R:
-        if(UP()) {          // R -> N
-          state = _N;
-          pressed = 1;
-        } else if(DOWN()) { // R -> P
-          state = _P;
-          pressed = 1;
-        }
-      break;
-
-      case _N:
-        if(UP()) {          // N -> D
-          state = _D;
-          pressed = 1;
-        } else if(DOWN()) { // N -> R
-          state = _R;
-          pressed = 1;
-        }
-      break;
-
-      case _D:
-        if(UP()) {          // D -> D
-          state = _D;
-          pressed = 1;
-        } else if(DOWN()) { // D -> N
-          state = _N;
-          pressed = 1;
-        }
-      break;
+        return;
     }
-  }
+
+    if(manual) {
+        int u = HIGH, d = HIGH;
+        if(UP()) {
+            u = LOW;
+            pressed = 1;
+        } else if (DOWN()) {
+            d = LOW;
+            pressed = 1;
+        }
+        digitalWrite(OUT_UP, u);
+        digitalWrite(OUT_DOWN, d);
+
+        return;
+    }
+
+    if(tune) {
+        if(BTN()) {
+            while(BTN());
+            if(state == _LAST) {
+                eeprom.write();
+                tune = 0;
+                state = _P;
+                return;
+            }
+            ++state;
+            return;
+        }
+
+        unsigned char *v;
+        if(state != _LAST) {
+            v = &SERVO_POS[state];
+        } else {
+            v = &eeprom.IDLE_LED;
+        }
+        if(UP()) {
+            (*v)++;
+            return;
+        }
+        if(DOWN()){
+            (*v)--;
+            return;
+        }
+        return;
+    }
+
+    if(state == _D) {
+        if (!manual && MANUAL()) { // switch to manual
+            manual = true;
+            digitalWrite(OUT_UP, HIGH);
+            digitalWrite(OUT_DOWN, HIGH);
+            return;
+        }
+
+        if (manual && !MANUAL()) { // switch to normal
+            manual = false;
+            digitalWrite(OUT_UP, LOW);
+            digitalWrite(OUT_DOWN, LOW);
+            return;
+        }
+    }
+
+    if(BTN() && BRAKE()) {
+        if(PARK()) {            // if park pressed - go to parking from any mode
+            state = _P;
+            return;
+        }
+        switch(state) {
+            case _P:
+                if(UP()) {          // P -> D
+                    state = _D;
+                    pressed = 1;
+                } else if(DOWN()) { // P -> R
+                    state = _R;
+                    pressed = 1;
+                }
+                break;
+
+            case _R:
+                if(UP()) {          // R -> N
+                    state = _N;
+                    pressed = 1;
+                } else if(DOWN()) { // R -> P
+                    state = _P;
+                    pressed = 1;
+                }
+                break;
+
+            case _N:
+                if(UP()) {          // N -> D
+                    state = _D;
+                    pressed = 1;
+                } else if(DOWN()) { // N -> R
+                    state = _R;
+                    pressed = 1;
+                }
+                break;
+
+            case _D:
+                if(UP()) {          // D -> D
+                    state = _D;
+                    pressed = 1;
+                } else if(DOWN()) { // D -> N
+                    state = _N;
+                    pressed = 1;
+                }
+                break;
+        }
+    }
 }
 
 void updateServo() {
-  static char last = -1;
-  if((tune || (last != state)) && state < _LAST) {
-    servo.write(SERVO_POS[state]);
-    last = state;
-  }
+    static char last = -1;
+    if((tune || (last != state)) && state < _LAST) {
+        servo.write(SERVO_POS[state]);
+        last = state;
+    }
 }
 
 void loop() {
-  checkButtons();
-  updateLeds();
-  updateServo();
+    checkButtons();
+    updateLeds();
+    updateServo();
 }
 
