@@ -24,7 +24,6 @@
 #define PARK()   (digitalRead(BUTTON_PARK)   == LOW)
 #define BRAKE()  (digitalRead(BUTTON_BRAKE)  == LOW)
 #define MANUAL() (digitalRead(BUTTON_MANUAL) == HIGH)
-#define NON_MANUAL() (digitalRead(BUTTON_MANUAL) == LOW)
 
 #define IDLE_PWM 20
 
@@ -163,6 +162,12 @@ void checkButtons() {
     }
 
     if(manual) {
+        if (!MANUAL()) { // switch to normal
+            manual = false;
+            digitalWrite(OUT_UP, LOW);
+            digitalWrite(OUT_DOWN, LOW);
+            return;
+        }
         int u = HIGH, d = HIGH;
         if(UP()) {
             u = LOW;
@@ -212,13 +217,6 @@ void checkButtons() {
             manual = true;
             digitalWrite(OUT_UP, HIGH);
             digitalWrite(OUT_DOWN, HIGH);
-            return;
-        }
-
-        if (manual && NON_MANUAL()) { // switch to normal
-            manual = false;
-            digitalWrite(OUT_UP, LOW);
-            digitalWrite(OUT_DOWN, LOW);
             return;
         }
     }
