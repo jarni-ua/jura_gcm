@@ -32,16 +32,18 @@ enum State {
     _R,
     _N,
     _D,
+    _LAST_SERVO, // servo is for PRND only
+    _M = _LAST_SERVO,
     _LAST
 };
 
 struct EEP {
-    unsigned char SERVO_POS[_LAST];
+    unsigned char SERVO_POS[_LAST_SERVO];
     unsigned char IDLE_LED;
     unsigned char CRC;
 
     void init() {
-        for(auto i = 0; i< _LAST; i++) {
+        for(auto i = 0; i< _LAST_SERVO; i++) {
             SERVO_POS[i] = 58+i*5;
         }
         IDLE_LED = 5;
@@ -78,7 +80,6 @@ unsigned char *SERVO_POS = (unsigned char *)&eeprom.SERVO_POS;
 unsigned char state = _P;
 unsigned char pressed = 0;
 unsigned char tune = 0;
-unsigned char manual = false;
 
 Servo servo;
 
@@ -90,6 +91,7 @@ void setup() {
     LEDS[_R] = LED_R;
     LEDS[_N] = LED_N;
     LEDS[_D] = LED_D;
+    LEDS[_M] = LED_M;
 
     pinMode(BUTTON_UP, INPUT_PULLUP);
     pinMode(BUTTON_DOWN, INPUT_PULLUP);
@@ -105,7 +107,6 @@ void setup() {
     for(auto i = 0; i< _LAST; i++) {
         pinMode(LEDS[i], OUTPUT);
     }
-    pinMode(LED_M, OUTPUT);
 
     servo.attach(SERVO_PIN);
     servo.write(SERVO_POS[state]);
@@ -140,11 +141,6 @@ void updateLeds() {
         if(i != state)
             digitalWrite(LEDS[i], st);
 
-    if(manual) {
-        digitalWrite(LED_M, LOW);
-    } else {
-        digitalWrite(LED_M, st);
-    }
     ++cnt;
 }
 
@@ -161,31 +157,10 @@ void checkButtons() {
         return;
     }
 
-    if(manual) {
-        if (!MANUAL()) { // switch to normal
-            manual = false;
-            digitalWrite(OUT_UP, LOW);
-            digitalWrite(OUT_DOWN, LOW);
-            return;
-        }
-        int u = HIGH, d = HIGH;
-        if(UP()) {
-            u = LOW;
-            pressed = 1;
-        } else if (DOWN()) {
-            d = LOW;
-            pressed = 1;
-        }
-        digitalWrite(OUT_UP, u);
-        digitalWrite(OUT_DOWN, d);
-
-        return;
-    }
-
     if(tune) {
         if(BTN()) {
             while(BTN());
-            if(state == _LAST) {
+            if(state == _LAST_SERVO) {
                 eeprom.write();
                 tune = 0;
                 state = _P;
@@ -196,7 +171,7 @@ void checkButtons() {
         }
 
         unsigned char *v;
-        if(state != _LAST) {
+        if(state != _LAST_SERVO) {
             v = &SERVO_POS[state];
         } else {
             v = &eeprom.IDLE_LED;
@@ -212,67 +187,93 @@ void checkButtons() {
         return;
     }
 
-    if(state == _D) {
-        if (!manual && MANUAL()) { // switch to manual
-            manual = true;
-            digitalWrite(OUT_UP, HIGH);
-            digitalWrite(OUT_DOWN, HIGH);
-            return;
-        }
+    if(BTN() && BRAKE() && PARK()) {            // if park pressed - go to parking from any mode
+        state = _P;
+        return;
     }
+    
+    switch(state) {
+        case _P:
+            if (!BTN() || !BRAKE())
+                break;
+            if(UP()) {          // P -> D
+                state = _D;
+                pressed = 1;
+            } else if(DOWN()) { // P -> R
+                state = _R;
+                pressed = 1;
+            }
+            break;
 
-    if(BTN() && BRAKE()) {
-        if(PARK()) {            // if park pressed - go to parking from any mode
-            state = _P;
-            return;
-        }
-        switch(state) {
-            case _P:
-                if(UP()) {          // P -> D
-                    state = _D;
+        case _R:
+            if (!BTN() || !BRAKE())
+                break;
+            if(UP()) {          // R -> N
+                state = _N;
+                pressed = 1;
+            } else if(DOWN()) { // R -> P
+                state = _P;
+                pressed = 1;
+            }
+            break;
+
+        case _N:
+            if (!BTN() || !BRAKE())
+                break;
+            if(UP()) {          // N -> D
+                state = _D;
+                pressed = 1;
+            } else if(DOWN()) { // N -> R
+                state = _R;
+                pressed = 1;
+            }
+            break;
+
+        case _D:
+            if(UP()) {          // D -> D
+                state = _D;
+                pressed = 1;
+            } else if(DOWN()) { // D -> N
+                if (!BTN() || !BRAKE())
+                    break;
+                state = _N;
+                pressed = 1;
+            }
+            else if (MANUAL()) { // D -> M
+                state = _M;
+                pressed = 1; // ?
+                digitalWrite(OUT_UP, HIGH);
+                digitalWrite(OUT_DOWN, HIGH);
+            }
+            break;
+        case _M:
+        {
+            if (!MANUAL()) { // M -> D
+                state = _D;
+                pressed = 1; // ?
+                digitalWrite(OUT_UP, LOW);
+                digitalWrite(OUT_DOWN, LOW);
+            }
+            else
+            {
+                int u = HIGH, d = HIGH;
+                if(UP()) {
+                    u = LOW;
                     pressed = 1;
-                } else if(DOWN()) { // P -> R
-                    state = _R;
+                } else if (DOWN()) {
+                    d = LOW;
                     pressed = 1;
                 }
-                break;
-
-            case _R:
-                if(UP()) {          // R -> N
-                    state = _N;
-                    pressed = 1;
-                } else if(DOWN()) { // R -> P
-                    state = _P;
-                    pressed = 1;
-                }
-                break;
-
-            case _N:
-                if(UP()) {          // N -> D
-                    state = _D;
-                    pressed = 1;
-                } else if(DOWN()) { // N -> R
-                    state = _R;
-                    pressed = 1;
-                }
-                break;
-
-            case _D:
-                if(UP()) {          // D -> D
-                    state = _D;
-                    pressed = 1;
-                } else if(DOWN()) { // D -> N
-                    state = _N;
-                    pressed = 1;
-                }
-                break;
+                digitalWrite(OUT_UP, u);
+                digitalWrite(OUT_DOWN, d);
+            }
         }
     }
 }
 
 void updateServo() {
     static char last = -1;
-    if((tune || (last != state)) && state < _LAST) {
+    if((tune || (last != state)) && state < _LAST_SERVO) {
         servo.write(SERVO_POS[state]);
         last = state;
     }
